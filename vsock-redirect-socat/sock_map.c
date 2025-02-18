@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
     tcp_pid = atoi(argv[3]);
     tcp_fd = atoi(argv[4]);
-    stolen_tcp_fd = steal_fd(tcp_pid, tcp_fd);
+    stolen_vsock_fd = steal_fd(tcp_pid, tcp_fd);
 
     if (!(skel = bpf_verdict__open_and_load())) {
         perror("bpf open and load fail");
