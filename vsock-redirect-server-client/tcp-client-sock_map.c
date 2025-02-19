@@ -15,12 +15,13 @@
 
 struct sockmap_key {
     __u32 family;
-    __u32 local_port;
-    __u32 remote_port;
+    __u16 local_port;
+    __u16 remote_port;
 };
 
 int main(int argc, char *argv[]) {
     int tcp_server_port, tcp_fd;
+    in_addr_t tcp_s_addr;
     int vsk_server_cid, vsk_server_port, vsk_server_fd;
     __u64 value;
     int sock_map_fd;
@@ -36,7 +37,7 @@ int main(int argc, char *argv[]) {
         perror("Usage: sock_map <tcp_server_addr> <tcp_server_port> <vsock_server_port>\n");
         exit(-1);
     }
-    tcp_server_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    tcp_s_addr = inet_addr(argv[1]);
     tcp_server_port = atoi(argv[2]);
     vsk_server_port = atoi(argv[3]);
 
@@ -52,8 +53,9 @@ int main(int argc, char *argv[]) {
     listen(vsk_server_fd, 32);
 
     memset(&tcp_server_addr, 0, sizeof(tcp_server_addr));
+    tcp_server_addr.sin_addr.s_addr = tcp_s_addr;
     tcp_server_addr.sin_family = AF_INET;
-    tcp_server_addr.sin_port = tcp_server_port;
+    tcp_server_addr.sin_port = ntohs(tcp_server_port);
 
     if (!(skel = bpf_verdict__open_and_load())) {
         perror("bpf open and load fail");

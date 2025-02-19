@@ -7,8 +7,8 @@
 
 struct sockmap_key {
     __u32 family;
-    __u32 local_port;
-    __u32 remote_port;
+    __u16 local_port;
+    __u16 remote_port;
 };
 
 struct {
