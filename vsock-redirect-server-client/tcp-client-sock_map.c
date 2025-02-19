@@ -68,12 +68,8 @@ int main(int argc, char *argv[]) {
     while (true) {
         int new_conn;
 
-        if ((new_conn = accept(vsk_server_fd, NULL, NULL)) < 0) {
+        if ((new_conn = accept(vsk_server_fd, (struct sockaddr *)&vsk_peer_addr, &vsk_peer_addr_len)) < 0) {
             perror("accept fail");
-            exit(errno);
-        }
-        if (getpeername(new_conn, (struct sockaddr *)&vsk_peer_addr, &vsk_peer_addr_len)) {
-            perror("getpeername fail");
             exit(errno);
         }
         printf("vsock local port: %d, remote port: %d\n", vsk_server_port, vsk_peer_addr.svm_port);

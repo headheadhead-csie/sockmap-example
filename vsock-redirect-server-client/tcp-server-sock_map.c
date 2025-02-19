@@ -65,12 +65,8 @@ int main(int argc, char *argv[]) {
     while (true) {
         int new_conn;
 
-        if ((new_conn = accept(tcp_server_fd, NULL, NULL)) < 0) {
+        if ((new_conn = accept(tcp_server_fd, (struct sockaddr *)&tcp_peer_addr, &tcp_peer_addr_len)) < 0) {
             perror("accept fail");
-            exit(errno);
-        }
-        if (getpeername(new_conn, (struct sockaddr *)&tcp_peer_addr, &tcp_peer_addr_len)) {
-            perror("getpeername fail");
             exit(errno);
         }
         printf("tcp local port: %d, remote port: %d\n", tcp_server_port, tcp_peer_addr.sin_port);
