@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
             perror("accept fail");
             exit(errno);
         }
-        printf("tcp local port: %d, remote port: %d\n", tcp_server_port, tcp_peer_addr.sin_port);
+        printf("tcp local port: %hu, remote port: %hu\n", tcp_server_port, tcp_peer_addr.sin_port);
 
         vsk_fd = socket(AF_VSOCK, SOCK_STREAM, 0);
         if (connect(vsk_fd, (const struct sockaddr *)&vsk_server_addr, sizeof(vsk_server_addr)) < 0) {
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
             perror("getsockname fail");
             exit(errno);
         }
-        printf("vsock local port: %d, remote port: %d\n", vsk_local_addr.svm_port, vsk_server_port);
+        printf("vsock local port: %hu, remote port: %hu\n", vsk_local_addr.svm_port, vsk_server_port);
 
         update_bpf_map(AF_INET, tcp_server_port, tcp_peer_addr.sin_port, vsk_fd);
         update_bpf_map(AF_VSOCK, vsk_local_addr.svm_port, vsk_server_port, new_conn);
