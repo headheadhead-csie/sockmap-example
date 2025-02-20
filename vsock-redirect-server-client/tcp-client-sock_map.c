@@ -3,11 +3,11 @@
 int set_vsock_server(struct sockaddr_vm *vsk_server_addr, int vsk_server_port) {
     int vsk_server_fd = socket(AF_VSOCK, SOCK_STREAM, 0);
 
-    memset(&vsk_server_addr, 0, sizeof(vsk_server_addr));
+    memset(vsk_server_addr, 0, sizeof(*vsk_server_addr));
     vsk_server_addr->svm_family = AF_VSOCK;
     vsk_server_addr->svm_cid = VMADDR_CID_ANY;
     vsk_server_addr->svm_port = vsk_server_port;
-    if (bind(vsk_server_fd, (const struct sockaddr *)&vsk_server_addr, sizeof(vsk_server_addr))) {
+    if (bind(vsk_server_fd, (const struct sockaddr *)vsk_server_addr, sizeof(*vsk_server_addr))) {
         perror("bind fail");
         exit(errno);
     }

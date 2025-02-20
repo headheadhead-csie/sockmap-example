@@ -3,11 +3,11 @@
 int set_tcp_server(struct sockaddr_in *tcp_server_addr, int tcp_server_port) {
     int tcp_server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-    memset(&tcp_server_addr, 0, sizeof(tcp_server_addr));
+    memset(tcp_server_addr, 0, sizeof(*tcp_server_addr));
     tcp_server_addr->sin_family = AF_INET;
     tcp_server_addr->sin_addr.s_addr = INADDR_ANY;
     tcp_server_addr->sin_port = htons(tcp_server_port);
-    if (bind(tcp_server_fd, (const struct sockaddr *)&tcp_server_addr, sizeof(tcp_server_addr))) {
+    if (bind(tcp_server_fd, (const struct sockaddr *)tcp_server_addr, sizeof(*tcp_server_addr))) {
         perror("bind fail");
         exit(errno);
     }
