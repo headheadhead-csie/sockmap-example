@@ -21,9 +21,18 @@ struct sockmap_key {
 };
 
 static struct bpf_verdict *skel;
+static int sock_map_fd;
 
 static void handler(int signum) {
+    struct sockmap_key key, next_key = {0, 0};
     if (skel) {
+        while (bpf_map_get_next_key(sock_map_fd, &key, &next_key) == 0) {
+            if (bpf_map_delete_elem(sock_map_fd, &next_key)) {
+                perror("bpf map update fail");
+                exit(errno);
+            }
+            key = next_key;
+        }
         bpf_verdict__detach(skel);
         bpf_verdict__destroy(skel);
         skel = NULL;
@@ -39,9 +48,9 @@ static void set_sigint_handler() {
     sigaction(SIGINT, &sigact, NULL);
     return;
 }
-static int set_bpf_map() {
+
+static void set_bpf_map() {
     struct bpf_map *sock_map;
-    int sock_map_fd;
 
     if (!(skel = bpf_verdict__open_and_load())) {
         perror("bpf open and load fail");
@@ -50,15 +59,11 @@ static int set_bpf_map() {
     sock_map = skel->maps.sock_map;
     sock_map_fd = bpf_map__fd(sock_map);
     bpf_prog_attach(bpf_program__fd(skel->progs.bpf_prog_verdict), sock_map_fd, BPF_SK_SKB_VERDICT, 0);
-
-    return sock_map_fd;
 }
 
-static void update_bpf_map(int sock_map_fd, __u32 family,
-                    __u16 local_port, __u16 remote_port,
-                    __u64 value) {
+static void update_bpf_map(__u32 family, __u16 local_port, __u16 remote_port, __u64 value) {
     struct sockmap_key key;
-    key.family = AF_INET;
+    key.family = family;
     key.local_port = local_port;
     key.remote_port = remote_port;
     if (bpf_map_update_elem(sock_map_fd, &key, &value, BPF_NOEXIST)) {

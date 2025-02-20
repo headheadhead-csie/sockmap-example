@@ -20,7 +20,6 @@ int main(int argc, char *argv[]) {
     int tcp_server_port, tcp_fd;
     in_addr_t tcp_s_addr;
     int vsk_server_port, vsk_server_fd;
-    int sock_map_fd;
     struct sockaddr_in tcp_server_addr, tcp_local_addr;
     unsigned int tcp_local_addr_len = sizeof(tcp_local_addr);
     struct sockaddr_vm vsk_server_addr, vsk_peer_addr;
@@ -43,7 +42,7 @@ int main(int argc, char *argv[]) {
     tcp_server_addr.sin_family = AF_INET;
     tcp_server_addr.sin_port = ntohs(tcp_server_port);
 
-    sock_map_fd = set_bpf_map();
+    set_bpf_map();
 
     while (true) {
         int new_conn;
@@ -65,8 +64,8 @@ int main(int argc, char *argv[]) {
         }
         printf("tcp local port: %d, remote port: %d\n", tcp_local_addr.sin_port, tcp_server_port);
 
-        update_bpf_map(sock_map_fd, AF_VSOCK, vsk_server_port, vsk_peer_addr.svm_port, tcp_fd);
-        update_bpf_map(sock_map_fd, AF_INET, tcp_local_addr.sin_port, tcp_server_port, new_conn);
+        update_bpf_map(AF_VSOCK, vsk_server_port, vsk_peer_addr.svm_port, tcp_fd);
+        update_bpf_map(AF_INET, tcp_local_addr.sin_port, tcp_server_port, new_conn);
     }
 
     bpf_verdict__detach(skel);

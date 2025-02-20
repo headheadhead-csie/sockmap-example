@@ -19,7 +19,6 @@ int set_tcp_server(struct sockaddr_in *tcp_server_addr, int tcp_server_port) {
 int main(int argc, char *argv[]) {
     int tcp_server_port, tcp_server_fd;
     int vsk_server_cid, vsk_server_port, vsk_fd;
-    int sock_map_fd;
     struct sockaddr_in tcp_server_addr, tcp_peer_addr;
     unsigned int tcp_peer_addr_len = sizeof(tcp_peer_addr);
     struct sockaddr_vm vsk_server_addr, vsk_local_addr;
@@ -42,7 +41,7 @@ int main(int argc, char *argv[]) {
     vsk_server_addr.svm_cid = vsk_server_cid;
     vsk_server_addr.svm_port = vsk_server_port;
 
-    sock_map_fd = set_bpf_map();
+    set_bpf_map();
 
     while (true) {
         int new_conn;
@@ -64,8 +63,8 @@ int main(int argc, char *argv[]) {
         }
         printf("vsock local port: %d, remote port: %d\n", vsk_local_addr.svm_port, vsk_server_port);
 
-        update_bpf_map(sock_map_fd, AF_INET, tcp_server_port, tcp_peer_addr.sin_port, vsk_fd);
-        update_bpf_map(sock_map_fd, AF_VSOCK, vsk_local_addr.svm_port, vsk_server_port, new_conn);
+        update_bpf_map(AF_INET, tcp_server_port, tcp_peer_addr.sin_port, vsk_fd);
+        update_bpf_map(AF_VSOCK, vsk_local_addr.svm_port, vsk_server_port, new_conn);
     }
 
     bpf_verdict__detach(skel);
