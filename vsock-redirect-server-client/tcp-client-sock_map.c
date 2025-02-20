@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
         printf("tcp local port: %hu, remote port: %hu\n", tcp_local_addr.sin_port, tcp_server_port);
 
         update_bpf_map(AF_VSOCK, vsk_server_port, vsk_peer_addr.svm_port, tcp_fd);
-        update_bpf_map(AF_INET, tcp_local_addr.sin_port, tcp_server_port, new_conn);
+        update_bpf_map(AF_INET, ntohs(tcp_local_addr.sin_port), htons(tcp_server_port), new_conn);
     }
 
     bpf_verdict__detach(skel);
