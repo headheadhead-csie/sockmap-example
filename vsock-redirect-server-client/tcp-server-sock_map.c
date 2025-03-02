@@ -53,13 +53,17 @@ int main(int argc, char *argv[]) {
         }
         printf("tcp local port: %hu, remote port: %hu\n", tcp_server_port, tcp_peer_addr.sin_port);
 
-        vsk_fd = socket(AF_VSOCK, SOCK_STREAM | SOCK_NONBLOCK, 0);
+        vsk_fd = socket(AF_VSOCK, SOCK_STREAM, 0);
         if (connect(vsk_fd, (const struct sockaddr *)&vsk_server_addr, sizeof(vsk_server_addr)) < 0) {
             perror("connect fail");
             exit(errno);
         }
         if (getsockname(vsk_fd, (struct sockaddr *)&vsk_local_addr, &vsk_local_addr_len)) {
             perror("getsockname fail");
+            exit(errno);
+        }
+        if (fcntl(vsk_fd, F_SETFD, fcntl(vsk_fd, F_GETFD) | O_NONBLOCK) < 0) {
+            perror("fcntl fail");
             exit(errno);
         }
         printf("vsock local port: %hu, remote port: %hu\n", vsk_local_addr.svm_port, vsk_server_port);
