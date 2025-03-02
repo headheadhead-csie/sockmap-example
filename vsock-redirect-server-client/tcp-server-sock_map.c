@@ -46,13 +46,14 @@ int main(int argc, char *argv[]) {
     while (true) {
         int new_conn;
 
-        if ((new_conn = accept(tcp_server_fd, (struct sockaddr *)&tcp_peer_addr, &tcp_peer_addr_len)) < 0) {
+        if ((new_conn = accept4(tcp_server_fd, (struct sockaddr *)&tcp_peer_addr,
+                               &tcp_peer_addr_len, SOCK_NONBLOCK)) < 0) {
             perror("accept fail");
             exit(errno);
         }
         printf("tcp local port: %hu, remote port: %hu\n", tcp_server_port, tcp_peer_addr.sin_port);
 
-        vsk_fd = socket(AF_VSOCK, SOCK_STREAM, 0);
+        vsk_fd = socket(AF_VSOCK, SOCK_STREAM | SOCK_NONBLOCK, 0);
         if (connect(vsk_fd, (const struct sockaddr *)&vsk_server_addr, sizeof(vsk_server_addr)) < 0) {
             perror("connect fail");
             exit(errno);
@@ -65,6 +66,8 @@ int main(int argc, char *argv[]) {
 
         update_bpf_map(AF_INET, tcp_server_port, tcp_peer_addr.sin_port, vsk_fd);
         update_bpf_map(AF_VSOCK, vsk_local_addr.svm_port, vsk_server_port, new_conn);
+        clear_sock(new_conn, vsk_fd);
+        clear_sock(vsk_fd, new_conn);
     }
 
     bpf_verdict__detach(skel);
