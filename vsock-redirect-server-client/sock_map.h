@@ -76,21 +76,12 @@ static void update_bpf_map(__u32 family, __u16 local_port, __u16 remote_port, __
 
 static void clear_sock(int src_sock, int dst_sock) {
     char buf[4096];
-    unsigned int read_cnt, write_cnt;
+    int read_cnt = 0, write_cnt = 0;
 
-    while ((read_cnt = read(src_sock, buf, sizeof(buf))) > 0)
-        while ((write_cnt = write(dst_sock, buf+write_cnt, read_cnt))
-               != read_cnt)
-            read_cnt -= write_cnt;
-
-    if (read_cnt < 0) {
-        perror("read socket fail");
-        exit(errno);
-    }
-
-    if (write_cnt < 0) {
-        perror("write socket fail");
-        exit(errno);
+    while ((read_cnt = read(src_sock, buf, sizeof(buf))) > 0) {
+        write_cnt = 0;
+        while ((write_cnt += write(dst_sock, buf+write_cnt, read_cnt))
+               != read_cnt);
     }
 }
 

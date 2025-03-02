@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
             perror("getsockname fail");
             exit(errno);
         }
-        if (fcntl(tcp_fd, F_SETFD, fcntl(tcp_fd, F_GETFD) | O_NONBLOCK) < 0) {
+        if (fcntl(tcp_fd, F_SETFL, fcntl(tcp_fd, F_GETFL) | O_NONBLOCK) < 0) {
             perror("fcntl fail");
             exit(errno);
         }
@@ -71,8 +71,10 @@ int main(int argc, char *argv[]) {
 
         update_bpf_map(AF_VSOCK, vsk_server_port, vsk_peer_addr.svm_port, tcp_fd);
         update_bpf_map(AF_INET, ntohs(tcp_local_addr.sin_port), htons(tcp_server_port), new_conn);
+        printf("start clear sock\n");
         clear_sock(tcp_fd, new_conn);
         clear_sock(new_conn, tcp_fd);
+        printf("finish clear sock\n");
     }
 
     bpf_verdict__detach(skel);
