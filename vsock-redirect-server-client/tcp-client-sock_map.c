@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_vm vsk_server_addr, vsk_peer_addr;
     unsigned int vsk_peer_addr_len = sizeof(vsk_peer_addr);
 
-    if (argc != 4) {
+    if (argc != 5) {
         perror("Usage: sock_map <tcp_server_addr> <tcp_server_port> <vsock_server_port> <use_nodelay>\n");
         exit(-1);
     }
