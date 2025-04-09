@@ -30,7 +30,7 @@ static void handler(int signum) {
     if (skel) {
         while (bpf_map_get_next_key(sock_map_fd, &key, &next_key) == 0) {
             if (bpf_map_delete_elem(sock_map_fd, &next_key)) {
-                perror("bpf map update fail");
+                perror("bpf map delete fail");
                 exit(errno);
             }
             key = next_key;
@@ -68,10 +68,8 @@ static void update_bpf_map(__u32 family, __u16 local_port, __u16 remote_port, __
     key.family = family;
     key.local_port = local_port;
     key.remote_port = remote_port;
-    if (bpf_map_update_elem(sock_map_fd, &key, &value, BPF_NOEXIST)) {
+    if (bpf_map_update_elem(sock_map_fd, &key, &value, BPF_NOEXIST))
         perror("bpf map update fail");
-        exit(errno);
-    }
 }
 
 static void clear_sock(int src_sock, int dst_sock) {
