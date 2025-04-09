@@ -17,6 +17,7 @@ int set_vsock_server(struct sockaddr_vm *vsk_server_addr, int vsk_server_port) {
 }
 
 int main(int argc, char *argv[]) {
+    bool use_nodelay = false;
     int tcp_server_port, tcp_fd;
     in_addr_t tcp_s_addr;
     int vsk_server_port, vsk_server_fd;
@@ -26,12 +27,13 @@ int main(int argc, char *argv[]) {
     unsigned int vsk_peer_addr_len = sizeof(vsk_peer_addr);
 
     if (argc != 4) {
-        perror("Usage: sock_map <tcp_server_addr> <tcp_server_port> <vsock_server_port>\n");
+        perror("Usage: sock_map <tcp_server_addr> <tcp_server_port> <vsock_server_port> <use_nodelay>\n");
         exit(-1);
     }
     tcp_s_addr = inet_addr(argv[1]);
     tcp_server_port = atoi(argv[2]);
     vsk_server_port = atoi(argv[3]);
+    use_nodelay = atoi(argv[4]);
 
     set_sigint_handler();
 
@@ -45,11 +47,15 @@ int main(int argc, char *argv[]) {
     set_bpf_map();
 
     while (true) {
-        int new_conn;
+        int new_conn, flag = 1;
 
         if ((new_conn = accept4(vsk_server_fd, (struct sockaddr *)&vsk_peer_addr,
                                 &vsk_peer_addr_len, SOCK_NONBLOCK)) < 0) {
             perror("accept fail");
+            exit(errno);
+        }
+        if (setsockopt(new_conn, SOL_SOCKET, SO_ZEROCOPY, &flag, sizeof(flag))) {
+            perror("setsockopt fail");
             exit(errno);
         }
         printf("vsock local port: %hu, remote port: %hu\n", vsk_server_port, vsk_peer_addr.svm_port);
@@ -66,6 +72,12 @@ int main(int argc, char *argv[]) {
         if (fcntl(tcp_fd, F_SETFL, fcntl(tcp_fd, F_GETFL) | O_NONBLOCK) < 0) {
             perror("fcntl fail");
             exit(errno);
+        }
+        if (use_nodelay) {
+            if (setsockopt(tcp_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag))) {
+                perror("setsockopt fail");
+                exit(errno);
+            }
         }
         printf("tcp local port: %hu, remote port: %hu\n", tcp_local_addr.sin_port, tcp_server_port);
 

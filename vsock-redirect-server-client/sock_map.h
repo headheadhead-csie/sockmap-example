@@ -8,6 +8,7 @@
 #include <sys/syscall.h>
 #include <linux/vm_sockets.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 
 #include <stdio.h>
