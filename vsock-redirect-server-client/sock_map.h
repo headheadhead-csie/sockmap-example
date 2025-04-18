@@ -3,6 +3,8 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/epoll.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/syscall.h>
@@ -17,10 +19,18 @@
 #include <bpf/bpf.h>
 #include "bpf-verdict.skel.h"
 
+#define MAX_EVENTS 32
+
 struct sockmap_key {
     __u32 family;
     __u16 local_port;
     __u16 remote_port;
+};
+
+struct sock_key_pair {
+    int sock_fd;
+    struct sockmap_key key;
+    struct sock_key_pair *pair;
 };
 
 static struct bpf_verdict *skel;
@@ -64,12 +74,14 @@ static void set_bpf_map() {
     bpf_prog_attach(bpf_program__fd(skel->progs.bpf_prog_verdict), sock_map_fd, BPF_SK_SKB_VERDICT, 0);
 }
 
-static void update_bpf_map(__u32 family, __u16 local_port, __u16 remote_port, __u64 value) {
-    struct sockmap_key key;
-    key.family = family;
-    key.local_port = local_port;
-    key.remote_port = remote_port;
-    if (bpf_map_update_elem(sock_map_fd, &key, &value, BPF_NOEXIST))
+static inline void set_key(struct sockmap_key *key, __u32 family, __u16 local_port, __u16 remote_port) {
+    key->family = family;
+    key->local_port = local_port;
+    key->remote_port = remote_port;
+}
+
+static void update_bpf_map(struct sockmap_key *key,  __u64 value) {
+    if (bpf_map_update_elem(sock_map_fd, key, &value, BPF_NOEXIST))
         perror("bpf map update fail");
 }
 
@@ -84,3 +96,16 @@ static void clear_sock(int src_sock, int dst_sock) {
     }
 }
 
+static void add_event(int epoll_fd, int add_fd, struct epoll_event *event) {
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, add_fd, event) < 0) {
+        perror("epoll_ctl add fail");
+        exit(errno);
+    }
+}
+
+static void del_event(int epoll_fd, int del_fd) {
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, del_fd, NULL) < 0) {
+        perror("epoll_ctl del fail");
+        exit(errno);
+    }
+}
