@@ -15,11 +15,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include <bpf/bpf.h>
 #include "bpf-verdict.skel.h"
 
 #define MAX_EVENTS 32
+
+#ifdef DEBUG
+#define DPRINTF(...) printf(__VA_ARGS__);
+#else
+#define DPRINTF(...) {}
+#endif
 
 struct sockmap_key {
     __u32 family;

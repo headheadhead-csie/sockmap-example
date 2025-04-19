@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
                     perror("setsockopt fail");
                     exit(errno);
                 }
-                printf("vsock local port: %hu, remote port: %hu\n", vsk_server_port, vsk_peer_addr.svm_port);
+                DPRINTF("vsock local port: %hu, remote port: %hu\n", vsk_server_port, vsk_peer_addr.svm_port);
 
                 tcp_fd = socket(AF_INET, SOCK_STREAM, 0);
                 if (connect(tcp_fd, (const struct sockaddr *)&tcp_server_addr, sizeof(tcp_server_addr)) < 0) {
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
                         exit(errno);
                     }
                 }
-                printf("tcp local port: %hu, remote port: %hu\n", tcp_local_addr.sin_port, tcp_server_port);
+                DPRINTF("tcp local port: %hu, remote port: %hu\n", tcp_local_addr.sin_port, tcp_server_port);
 
                 event.events = EPOLLHUP | EPOLLRDHUP;
                 tcp_skp = malloc(sizeof(*tcp_skp));
@@ -124,13 +124,13 @@ int main(int argc, char *argv[]) {
                 set_key(&vsk_skp->key, AF_INET, ntohs(tcp_local_addr.sin_port), htons(tcp_server_port));
                 update_bpf_map(&vsk_skp->key, new_conn);
 
-                printf("start clear sock\n");
+                DPRINTF("start clear sock\n");
                 clear_sock(tcp_fd, new_conn);
                 clear_sock(new_conn, tcp_fd);
-                printf("finish clear sock\n");
+                DPRINTF("finish clear sock\n");
             } else {
                 struct sock_key_pair *pair = skp->pair;
-                printf("cleaning socket %d\n", skp->sock_fd);
+                DPRINTF("cleaning socket %d\n", skp->sock_fd);
 
                 if (!(event.events & (EPOLLHUP | EPOLLRDHUP)))
                     continue;
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 skp = NULL;
-                printf("socket are closed\n");
+                DPRINTF("socket are closed\n");
             }
         }
     }
