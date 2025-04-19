@@ -24,7 +24,7 @@ int set_vsock_server(struct sockaddr_vm *vsk_server_addr, int vsk_server_port) {
 int main(int argc, char *argv[]) {
     int epoll_fd;
     struct epoll_event event, events[MAX_EVENTS];
-    bool use_nodelay = false;
+    bool use_nodelay = false, use_zc = false;
     int tcp_server_port, tcp_fd;
     in_addr_t tcp_s_addr;
     int vsk_server_port, vsk_server_fd;
@@ -34,14 +34,15 @@ int main(int argc, char *argv[]) {
     unsigned int vsk_peer_addr_len = sizeof(vsk_peer_addr);
     struct sock_key_pair vsk_server_skp;
 
-    if (argc != 5) {
-        perror("Usage: sock_map <tcp_server_addr> <tcp_server_port> <vsock_server_port> <use_nodelay>\n");
+    if (argc != 6) {
+        perror("Usage: sock_map <tcp_server_addr> <tcp_server_port> <vsock_server_port> <use_nodelay> <use_zc>\n");
         exit(-1);
     }
     tcp_s_addr = inet_addr(argv[1]);
     tcp_server_port = atoi(argv[2]);
     vsk_server_port = atoi(argv[3]);
     use_nodelay = atoi(argv[4]);
+    use_zc = atoi(argv[5]);
 
     set_sigint_handler();
 
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]) {
 
     while (true) {
         struct sock_key_pair *skp, *vsk_skp, *tcp_skp;
-        int new_conn, flag = 1, event_cnt;
+        int new_conn, flag, event_cnt;
 
         event_cnt = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         for (int i = 0; i < event_cnt; i++) {
@@ -78,6 +79,7 @@ int main(int argc, char *argv[]) {
                     perror("accept fail");
                     exit(errno);
                 }
+                flag = use_zc;
                 if (setsockopt(new_conn, SOL_SOCKET, SO_ZEROCOPY, &flag, sizeof(flag))) {
                     perror("setsockopt fail");
                     exit(errno);
@@ -97,11 +99,10 @@ int main(int argc, char *argv[]) {
                     perror("fcntl fail");
                     exit(errno);
                 }
-                if (use_nodelay) {
-                    if (setsockopt(tcp_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag))) {
-                        perror("setsockopt fail");
-                        exit(errno);
-                    }
+                flag = use_nodelay;
+                if (setsockopt(tcp_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag))) {
+                    perror("setsockopt fail");
+                    exit(errno);
                 }
                 DPRINTF("tcp local port: %hu, remote port: %hu\n", tcp_local_addr.sin_port, tcp_server_port);
 
